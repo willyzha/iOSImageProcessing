@@ -46,7 +46,7 @@ class View2: UIViewController, UIImagePickerControllerDelegate, UINavigationCont
         super.viewWillAppear(animated)
         
         captureSession = AVCaptureSession()
-        captureSession?.sessionPreset = AVCaptureSessionPreset1920x1080
+        captureSession?.sessionPreset = AVCaptureSessionPreset352x288
         
         let backCamera = AVCaptureDevice.defaultDeviceWithMediaType(AVMediaTypeVideo)
         
@@ -119,14 +119,14 @@ class View2: UIViewController, UIImagePickerControllerDelegate, UINavigationCont
     }
     
     func processImage(image: UIImage) -> (colorImage: UIImage, greyImage: UIImage) {
-        let greyScaleImage = convertToGrayScale(image)
+        let greyScaleImage = ImageSearchFunctions.convertToGrayScale(image)
         
         print("image: H=\(image.size.height) W=\(image.size.width)")
         print("greyScaleImage: H=\(greyScaleImage.size.height) W=\(greyScaleImage.size.width)")
         
-        let imageBitMap = intensityValuesFromImage(greyScaleImage)
+        let imageBitMap = ImageSearchFunctions.intensityValuesFromImage(greyScaleImage)
         
-        let summedTable = calculateSummedAreaTable(imageBitMap.pixelValues, width: imageBitMap.width, height: imageBitMap.height)
+        let summedTable = ImageSearchFunctions.calculateSummedAreaTable(imageBitMap.pixelValues, width: imageBitMap.width, height: imageBitMap.height)
         
         let matches = findLightSquare(summedTable!, width: imageBitMap.height, height: imageBitMap.width)
         
@@ -183,51 +183,47 @@ class View2: UIViewController, UIImagePickerControllerDelegate, UINavigationCont
         
         
 //        var currentPixel = pixelBuffer
-        let maxMatches = 20
-        var matchCounter = 0
-        var firstCounter = 0
         for coord in match {
-            if coord.squareWidth != coord.squareHeight || firstCounter < (maxMatches/2){
-                var topDrawer = pixelBuffer + getPixelIndex(coord.x, y: coord.y, height: width)
-                var bottomDrawer = pixelBuffer + getPixelIndex(coord.x + coord.squareWidth, y: coord.y, height: width)
-                for _ in 0..<coord.squareHeight {
-                    // Top
-                    topDrawer.memory = self.rgba(red: 0, green: 255, blue: 0, alpha: 255)
-                    topDrawer = topDrawer + width
-                    
-                    // Bottom
-                    bottomDrawer.memory = self.rgba(red: 0, green: 255, blue: 0, alpha: 255)
-                    bottomDrawer = bottomDrawer + width
-                }
+            var topDrawer = pixelBuffer + getPixelIndex(coord.x, y: coord.y, height: width)
+            var bottomDrawer = pixelBuffer + getPixelIndex(coord.x + coord.squareWidth, y: coord.y, height: width)
+            for _ in 0..<coord.squareHeight {
+                // Top
+                topDrawer.memory = self.rgba(red: 0, green: 255, blue: 0, alpha: 255)
+                topDrawer = topDrawer + width
                 
-                var rightDrawer = pixelBuffer + getPixelIndex(coord.x, y: coord.y, height: width)
-                var leftDrawer = pixelBuffer + getPixelIndex(coord.x, y: coord.y + coord.squareHeight, height: width)
-                
-                
-                //print("leftDrawer start coord: x=\(coord.x) y=\(coord.y + coord.squareHeight) pixelIndex=\(getPixelIndex(coord.x, y: coord.y + coord.squareHeight, height: width))")
-                for _ in 0..<coord.squareWidth {
-                    // Left
-                    leftDrawer.memory = self.rgba(red: 0, green: 255, blue: 0, alpha: 255)
-                    //let hex = String(leftDrawer.memory, radix: 16)
-                    //print("Hex=\(hex)")
-                    leftDrawer = leftDrawer + 1
-                
-                    
-                    // Right
-                    rightDrawer.memory = self.rgba(red: 0, green: 255, blue: 0, alpha: 255)
-                    rightDrawer = rightDrawer + 1
-                }
-                
-                
-                //print("Painting: x=\(coord.x) y=\(coord.y) for height=\(coord.squareHeight) width=\(coord.squareWidth)")
-                
-                if matchCounter > maxMatches {
-                    break;
-                } else {
-                    //matchCounter = matchCounter + 1
-                    //firstCounter = firstCounter + 1
-                }
+                // Bottom
+                bottomDrawer.memory = self.rgba(red: 0, green: 255, blue: 0, alpha: 255)
+                bottomDrawer = bottomDrawer + width
             }
+            
+            var rightDrawer = pixelBuffer + getPixelIndex(coord.x, y: coord.y, height: width)
+            var leftDrawer = pixelBuffer + getPixelIndex(coord.x, y: coord.y + coord.squareHeight, height: width)
+            
+            
+            //print("leftDrawer start coord: x=\(coord.x) y=\(coord.y + coord.squareHeight) pixelIndex=\(getPixelIndex(coord.x, y: coord.y + coord.squareHeight, height: width))")
+            for _ in 0..<coord.squareWidth {
+                // Left
+                leftDrawer.memory = self.rgba(red: 0, green: 255, blue: 0, alpha: 255)
+                //let hex = String(leftDrawer.memory, radix: 16)
+                //print("Hex=\(hex)")
+                leftDrawer = leftDrawer + 1
+                
+                
+                // Right
+                rightDrawer.memory = self.rgba(red: 0, green: 255, blue: 0, alpha: 255)
+                rightDrawer = rightDrawer + 1
+            }
+            
+            
+            //print("Painting: x=\(coord.x) y=\(coord.y) for height=\(coord.squareHeight) width=\(coord.squareWidth)")
+            
+            if matchCounter > maxMatches {
+                break;
+            } else {
+                //matchCounter = matchCounter + 1
+                //firstCounter = firstCounter + 1
+            }
+
         }
         
 //        for _ in 0..<Int(height) {
@@ -304,10 +300,10 @@ class View2: UIViewController, UIImagePickerControllerDelegate, UINavigationCont
                 
                 var C: Int
                 if y + squareSize > width {
-                    C = getPixelIndex(x, y: width - 1, height: height)
+                    C = getPixelIndex(x - 1, y: width - 1, height: height)
                     squareHeight = width - y - 1
                 } else {
-                    C = getPixelIndex(x, y: y + squareSize, height: height)
+                    C = getPixelIndex(x - 1, y: y + squareSize, height: height)
                 }
                 
                 var D: Int
@@ -318,6 +314,9 @@ class View2: UIViewController, UIImagePickerControllerDelegate, UINavigationCont
                 } else if y + squareSize > width {
                     D = getPixelIndex(x + squareSize, y: width - 1, height: height)
                     squareHeight = width - y - 1
+                } else if x + squareSize > height {
+                    D = getPixelIndex(height - 1, y: y + squareSize, height: height)
+                    squareWidth = height - x - 1
                 } else {
                     D = getPixelIndex(x + squareSize, y: y + squareSize, height: height)
                 }
@@ -337,6 +336,13 @@ class View2: UIViewController, UIImagePickerControllerDelegate, UINavigationCont
                     sum = summedTable[A] + summedTable[D] - summedTable[B] - summedTable[C]
                 }
                 
+                if squareHeight != squareSize {
+                    print("Sum=\(sum) which is below 0 x=\(x) y=\(y) A=\(A) B=\(B) C=\(C) D=\(D) width=\(squareWidth) height=\(squareHeight) codePath=\(codePath)")
+                    if (codePath == 3) {
+                        print("summedTable[A]=\(summedTable[A]) + summedTable[D]=\(summedTable[D]) - summedTable[B]=\(summedTable[B]) - summedTable[C]=\(summedTable[C])")
+                    }
+                }
+                
                 let average = Double(sum) / Double(squareHeight * squareWidth)
                 if (average > 255) {
                     print("Average is \(average) which is greater than 255 \(codePath)")
@@ -345,15 +351,21 @@ class View2: UIViewController, UIImagePickerControllerDelegate, UINavigationCont
                 if (selectedColor == 1) {
                     if (average > Double(threshold)) {
                         matches.append((x, y, squareWidth, squareHeight))
-                        //print("Match Found at x=\(x) y=\(y) for squareWidth=\(squareWidth) squareHeight=\(squareHeight)")
+                        print("Match Found at x=\(x) y=\(y) for squareWidth=\(squareWidth) squareHeight=\(squareHeight)")
+                        print("Average=\(average) threshold=\(threshold)")
                     }
                 } else if (selectedColor == 0) {
                     if (average < Double(threshold)) {
                         matches.append((x, y, squareWidth, squareHeight))
-                        //print("Match Found at x=\(x) y=\(y) for squareWidth=\(squareWidth) squareHeight=\(squareHeight)")
+                        print("Match Found at x=\(x) y=\(y) for squareWidth=\(squareWidth) squareHeight=\(squareHeight)")
+                        print("Average=\(average) threshold=\(threshold)")
                     }
                 } else {
                     print("UNKNOWN SELECTED COLOUR")
+                }
+                
+                if (sum < 0) {
+                    matches.append((x, y, squareWidth, squareHeight))
                 }
                 
                 x = x + squareSize
@@ -372,72 +384,5 @@ class View2: UIViewController, UIImagePickerControllerDelegate, UINavigationCont
         return (x + (y * height))
     }
     
-    func calculateSummedAreaTable(pixelValues: [UInt8]?, width: Int, height: Int) -> ([Int]?) {
-        var s: [Int]?
-        
-        s = [Int](count: width * height, repeatedValue: 0)
-        // s(x,y) = i(x,y) + s(x-1,y) + s(x,y-1) - s(x-1,y-1)
-        
-        s![0] = Int(pixelValues![0])
-        for x in 1...width {
-            s![x] = Int(pixelValues![x]) + s![x-1]
-        }
-        
-        for y in 1..<height {
-            s![y * width] = Int(pixelValues![y * width]) + s![(y - 1) * width]
-        }
-        
-        for y in 1..<height {
-            for x in 1..<width {
-                let index = x + (y * width)
-                s![index] = Int(pixelValues![index]) + s![index - 1] + s![index - width] - s![index - width - 1]
-            }
-        }
-        
-        return s
-    }
-    
-    func intensityValuesFromImage(image: UIImage?) -> (pixelValues: [UInt8]?, width: Int, height: Int) {
-        var width = 0
-        var height = 0
-        var pixelValues: [UInt8]?
-        if (image != nil) {
-            let imageRef = image!.CGImage
-            width = CGImageGetWidth(imageRef)
-            height = CGImageGetHeight(imageRef)
-            
-            let bytesPerPixel = 1
-            // let bytesPerPixel = 3
-            let bytesPerRow = bytesPerPixel * width
-            let bitsPerComponent = 8
-            let totalBytes = width * height * bytesPerPixel
-            
-            let colorSpace = CGColorSpaceCreateDeviceGray()
-            // let colorSpace = CGColorSpaceCreateDeviceRGB()
-            pixelValues = [UInt8](count: totalBytes, repeatedValue: 0)
-            
-            let contextRef = CGBitmapContextCreate(&pixelValues!, width, height, bitsPerComponent, bytesPerRow, colorSpace, 0)
-            CGContextDrawImage(contextRef, CGRectMake(0.0, 0.0, CGFloat(width), CGFloat(height)), imageRef)
-        }
-        
-        return (pixelValues, width, height)
-    }
-    
-    func convertToGrayScale(image: UIImage) -> UIImage {
-        let width = image.size.width
-        let height = image.size.height
-        
-        let imageRect:CGRect = CGRectMake(0, 0, width, height)
-        let colorSpace = CGColorSpaceCreateDeviceGray()
 
-        
-        let bitmapInfo = CGBitmapInfo(rawValue: CGImageAlphaInfo.None.rawValue)
-        let context = CGBitmapContextCreate(nil, Int(width), Int(height), 8, 0, colorSpace, bitmapInfo.rawValue)
-        
-        CGContextDrawImage(context, imageRect, image.CGImage)
-        let imageRef = CGBitmapContextCreateImage(context)
-        let newImage = UIImage(CGImage: imageRef!, scale: image.scale, orientation: image.imageOrientation)
-        
-        return newImage
-    }
 }
